@@ -16,7 +16,8 @@ async fn main() -> Result<(), hyper::Error> {
     #[derive(OpenApi)]
     #[openapi(
         paths(list_todos, create_todo),
-        components(schemas(Todo, TodoEntry, TodoStatus))
+        components(schemas(Todo, TodoEntry, TodoStatus)),
+        tags((name = "todo", description = "Todo items management API"))
     )]
     struct ApiDoc;
 
