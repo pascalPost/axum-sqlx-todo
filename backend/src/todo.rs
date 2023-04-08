@@ -1,20 +1,21 @@
-use std::sync::Arc;
-
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use sqlx::{Pool, Sqlite};
 use utoipa::ToSchema;
 
 /// todo item
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, ToSchema, sqlx::FromRow, sqlx::Type, sqlx::Decode,
+)]
 pub struct Todo {
     #[schema(example = "Buy groceries")]
     value: String,
 }
 
 /// todo status enum
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, sqlx::Type)]
+#[sqlx(rename_all = "lowercase")]
 pub enum TodoStatus {
     Todo,
     InProgress,
@@ -25,16 +26,19 @@ pub enum TodoStatus {
 /// todo database entry
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TodoEntry {
-    id: i32,
-    todo: Todo,
+    id: i64,
+
+    #[schema(example = "Buy groceries")]
+    value: String,
+
     status: TodoStatus,
 }
 
 impl TodoEntry {
-    pub fn new(id: i32, todo: Todo) -> Self {
+    pub fn new(id: i64, value: String) -> Self {
         Self {
             id,
-            todo,
+            value,
             status: TodoStatus::Todo,
         }
     }
@@ -48,9 +52,17 @@ impl TodoEntry {
       (status = 200, description = "List all todos successfully", body = [TodoEntry])
   )
 )]
-pub async fn list_todos(State(todos): State<Arc<Mutex<Vec<TodoEntry>>>>) -> Json<Vec<TodoEntry>> {
-    let todos = todos.lock().await.clone();
-    Json(todos)
+pub async fn list_todos(
+    State(pool): State<Pool<Sqlite>>,
+) -> Result<Json<Vec<TodoEntry>>, StatusCode> {
+    let result = sqlx::query_as!(
+        TodoEntry,
+        r#"SELECT id, value, status as "status: TodoStatus" FROM todos"#,
+    )
+    .fetch_all(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(result))
 }
 
 /// create a new todo
@@ -63,14 +75,26 @@ pub async fn list_todos(State(todos): State<Arc<Mutex<Vec<TodoEntry>>>>) -> Json
   )
 )]
 pub async fn create_todo(
-    State(todos): State<Arc<Mutex<Vec<TodoEntry>>>>,
+    State(pool): State<Pool<Sqlite>>,
     Json(todo): Json<Todo>,
-) -> impl IntoResponse {
-    let mut todos = todos.lock().await;
-    let id = todos.len() as i32;
-    let todo_entry = TodoEntry::new(id, todo);
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    todos.push(todo_entry.clone());
+    // Insert the todo, then obtain the ID of this row
+    let id = sqlx::query!(
+        r#"
+INSERT INTO todos ( value )
+VALUES ( ?1 )
+        "#,
+        todo.value,
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .last_insert_rowid();
 
-    (StatusCode::CREATED, Json(todo_entry)).into_response()
+    Ok((StatusCode::CREATED, Json(id)).into_response())
 }
