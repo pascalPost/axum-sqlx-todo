@@ -4,7 +4,6 @@ use axum::{extract::State, response::IntoResponse, Json};
 use axum::{routing, Router};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Sqlite};
 use utoipa::OpenApi;
 use utoipa::ToSchema;
 
@@ -50,16 +49,6 @@ pub struct TodoEntry {
     value: String,
 
     status: TodoStatus,
-}
-
-impl TodoEntry {
-    pub fn new(id: i64, value: String) -> Self {
-        Self {
-            id,
-            value,
-            status: TodoStatus::Todo,
-        }
-    }
 }
 
 /// list all todos

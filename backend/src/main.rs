@@ -2,18 +2,13 @@ mod endpoints;
 mod error;
 mod state;
 
-use crate::endpoints::todo::{create_todo, list_todos, Todo, TodoEntry, TodoStatus};
-use axum::{error_handling::HandleErrorLayer, routing, Router};
+use axum::Router;
 use dotenvy::dotenv;
-use endpoints::todo;
-use hyper::StatusCode;
-use sqlx::{Pool, SqlitePool};
+use endpoints::{swagger_ui, todo};
+use sqlx::SqlitePool;
 use state::AppState;
 use std::env;
 use std::error::Error;
-use tower::{BoxError, ServiceBuilder};
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -24,24 +19,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
 
     let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
+
+    // This embeds database migrations in the application binary so we can ensure the database
+    // is migrated correctly on startup
     sqlx::migrate!().run(&pool).await?;
 
     let state = AppState::new(pool);
 
-    // #[derive(OpenApi)]
-    // #[openapi(
-    //     paths(todo::list_todos, todo::create_todo),
-    //     components(schemas(Todo, TodoEntry, TodoStatus)),
-    //     tags((name = "todo", description = "Todo items management API"))
-    // )]
-    // struct ApiDoc;
-
-    // This embeds database migrations in the application binary so we can ensure the database
-    // is migrated correctly on startup
-
-    let app = todo::router()
-        // .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-        // .route("/todo", routing::get(list_todos).post(create_todo))
+    let app = Router::new()
+        .merge(swagger_ui::router())
+        .merge(todo::router())
         // .layer(
         //     ServiceBuilder::new()
         //         .layer(HandleErrorLayer::new(|error: BoxError| async move {
