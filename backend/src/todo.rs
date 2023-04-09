@@ -28,6 +28,8 @@ pub enum TodoStatus {
 pub struct TodoEntry {
     id: i64,
 
+    // has to be used here as sqlx compile time checked queries do not support
+    // nested structs
     #[schema(example = "Buy groceries")]
     value: String,
 
@@ -86,8 +88,8 @@ pub async fn create_todo(
     // Insert the todo, then obtain the ID of this row
     let id = sqlx::query!(
         r#"
-INSERT INTO todos ( value )
-VALUES ( ?1 )
+            INSERT INTO todos ( value )
+            VALUES ( ?1 )
         "#,
         todo.value,
     )
