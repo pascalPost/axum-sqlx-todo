@@ -1,8 +1,24 @@
+use crate::error::AppError;
+use crate::state::AppState;
 use axum::{extract::State, response::IntoResponse, Json};
+use axum::{routing, Router};
 use hyper::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
+use utoipa::OpenApi;
 use utoipa::ToSchema;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(list_todos, create_todo),
+    components(schemas(Todo, TodoEntry, TodoStatus))
+)]
+pub struct ApiDocTodo;
+
+/// returns the router for the todo endpoint
+pub fn router() -> Router<AppState> {
+    Router::new().route("/todo", routing::get(list_todos).post(create_todo))
+}
 
 /// todo item
 #[derive(
@@ -54,16 +70,13 @@ impl TodoEntry {
       (status = 200, description = "List all todos successfully", body = [TodoEntry])
   )
 )]
-pub async fn list_todos(
-    State(pool): State<Pool<Sqlite>>,
-) -> Result<Json<Vec<TodoEntry>>, StatusCode> {
+pub async fn list_todos(State(state): State<AppState>) -> Result<Json<Vec<TodoEntry>>, AppError> {
     let result = sqlx::query_as!(
         TodoEntry,
         r#"SELECT id, value, status as "status: TodoStatus" FROM todos"#,
     )
-    .fetch_all(&pool)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .fetch_all(state.db_pool())
+    .await?;
     Ok(Json(result))
 }
 
@@ -77,13 +90,10 @@ pub async fn list_todos(
   )
 )]
 pub async fn create_todo(
-    State(pool): State<Pool<Sqlite>>,
+    State(state): State<AppState>,
     Json(todo): Json<Todo>,
-) -> Result<impl IntoResponse, StatusCode> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<impl IntoResponse, AppError> {
+    let mut conn = state.db_pool().acquire().await?;
 
     // Insert the todo, then obtain the ID of this row
     let id = sqlx::query!(
@@ -94,8 +104,7 @@ pub async fn create_todo(
         todo.value,
     )
     .execute(&mut conn)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .await?
     .last_insert_rowid();
 
     Ok((StatusCode::CREATED, Json(id)).into_response())
