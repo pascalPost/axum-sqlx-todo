@@ -2,7 +2,6 @@
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use log;
 use thiserror;
 
 /// Error handling for the API.
@@ -66,9 +65,7 @@ impl IntoResponse for AppError {
             AppError::Forbidden => (),
             AppError::NotFound => (),
             AppError::Sqlx(e) => {
-                // TODO: we probably want to use `tracing` instead
-                // so that this gets linked to the HTTP request by `TraceLayer`.
-                log::error!("SQLx error: {:?}", e);
+                tracing::error!("SQLx error: {:?}", e);
             }
         }
 

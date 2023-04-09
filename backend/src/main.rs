@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use state::AppState;
 use std::env;
 use std::error::Error;
+use tower_http::trace::TraceLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -16,7 +17,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // TODO remove for production use
     dotenv().ok();
 
-    pretty_env_logger::init();
+    tracing_subscriber::fmt::init();
 
     let pool = SqlitePool::connect(&env::var("DATABASE_URL")?).await?;
 
@@ -29,6 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .merge(swagger_ui::router())
         .merge(todo::router())
+        .layer(TraceLayer::new_for_http())
         // .layer(
         //     ServiceBuilder::new()
         //         .layer(HandleErrorLayer::new(|error: BoxError| async move {
