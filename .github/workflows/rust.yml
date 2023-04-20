@@ -27,6 +27,7 @@ jobs:
       run: |
         sudo apt install sqlite3 -y
         cargo install --version=0.6.3 sqlx-cli --no-default-features --features native-tls,sqlite
+        : # hack for a sqlx bug that is looking for the db in the root folder
         cd backend
         pwd
         ls -l
@@ -34,7 +35,7 @@ jobs:
         pwd
         ls -l
         DB_FILE=$(ls -Art1 $(PWD) | tail -n 1)
-        ln -sf ${DB_FILE} ../${DB_FILE}
+        ln -sf ${DB_FILE} ../
         pwd
         ls -l
         cd ..
