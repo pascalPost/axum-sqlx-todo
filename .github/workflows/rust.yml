@@ -17,9 +17,11 @@ jobs:
         toolchain: stable
         override: true
     - name: Export env
-      uses: krisalay/export-env@v1.0.1
+      uses: falti/dotenv-action@v1.0.4
       with:
-        filename: backend/.env
+        path: ./backend/.env
+        log-variables: true
+        export-variables: true
     - name: Migrate database
       run: |
         sudo apt install sqlite3 -y
