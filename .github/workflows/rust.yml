@@ -17,6 +17,7 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
+    - name: Migrate database
       run: |
         cargo install sqlx-cli --no-default-features --features sqlite
         sqlx create db
