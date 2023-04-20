@@ -16,6 +16,10 @@ jobs:
         profile: minimal
         toolchain: stable
         override: true
+    - name: Export env
+      uses: krisalay/export-env@v1.0.1
+      with:
+        filename: backend/.env
     - name: Migrate database
       run: |
         sudo apt install sqlite3 -y
