@@ -20,7 +20,7 @@ jobs:
       run: |
         sudo apt install sqlite3 -y
         cargo install --version=0.6.3 sqlx-cli --no-default-features --features native-tls,sqlite
-        sqlx create db
+        sqlx database create
         sqlx migrate run
     - uses: actions-rs/cargo@v1
       with:
