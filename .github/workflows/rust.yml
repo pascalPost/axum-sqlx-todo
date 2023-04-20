@@ -30,7 +30,7 @@ jobs:
         cd backend
         sqlx database create
         : # hack for a sqlx bug that is looking for the db in the root folder
-        DB_FILE=$(ls -Art1 $(PWD) | tail -n 1)
+        DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
         ln -sf ${DB_FILE} ../
         sqlx migrate run
     - uses: actions-rs/cargo@v1
@@ -64,6 +64,23 @@ jobs:
           toolchain: stable
           override: true
       - run: rustup component add clippy
+      - name: Export env
+        uses: falti/dotenv-action@v1.0.4
+        with:
+          path: ./backend/.env
+          log-variables: true
+          export-variables: true
+          keys-case: "bypass"
+      - name: Migrate database
+        run: |
+          sudo apt install sqlite3 -y
+          cargo install --version=0.6.3 sqlx-cli --no-default-features --features native-tls,sqlite
+          cd backend
+          sqlx database create
+          : # hack for a sqlx bug that is looking for the db in the root folder
+          DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
+          ln -sf ${DB_FILE} ../
+          sqlx migrate run
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
