@@ -22,6 +22,7 @@ jobs:
         path: ./backend/.env
         log-variables: true
         export-variables: true
+        keys-case: "bypass"
     - name: Migrate database
       run: |
         sudo apt install sqlite3 -y
