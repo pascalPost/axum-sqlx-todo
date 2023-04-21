@@ -2,7 +2,6 @@
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use thiserror;
 
 /// Error handling for the API.
 /// Taken from https://github.com/launchbadge/realworld-axum-sqlx/blob/main/src/http/error.rs
