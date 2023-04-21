@@ -30,8 +30,10 @@ jobs:
         cd backend
         sqlx database create
         : # hack for a sqlx bug that is looking for the db in the root folder
+        cd ..
         DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
-        ln -sf ${DB_FILE} ../
+        ln -sf backend/${DB_FILE} .
+        cd backend
         sqlx migrate run
     - uses: actions-rs/cargo@v1
       with:
@@ -78,8 +80,10 @@ jobs:
           cd backend
           sqlx database create
           : # hack for a sqlx bug that is looking for the db in the root folder
+          cd ..
           DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
-          ln -sf ${DB_FILE} ../
+          ln -sf backend/${DB_FILE} .
+          cd backend
           sqlx migrate run
       - uses: actions-rs/cargo@v1
         with:
