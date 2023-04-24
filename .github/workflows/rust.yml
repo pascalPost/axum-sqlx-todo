@@ -27,13 +27,7 @@ jobs:
       run: |
         sudo apt install sqlite3 -y
         cargo install --version=0.6.3 sqlx-cli --no-default-features --features native-tls,sqlite
-        cd backend
         sqlx database create
-        : # hack for a sqlx bug that is looking for the db in the root folder
-        DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
-        cd ..
-        ln -sf backend/${DB_FILE} .
-        cd backend
         sqlx migrate run
     - uses: actions-rs/cargo@v1
       with:
@@ -77,13 +71,6 @@ jobs:
         run: |
           sudo apt install sqlite3 -y
           cargo install --version=0.6.3 sqlx-cli --no-default-features --features native-tls,sqlite
-          cd backend
-          sqlx database create
-          : # hack for a sqlx bug that is looking for the db in the root folder
-          DB_FILE=$(ls -Art1 ${PWD} | tail -n 1)
-          cd ..
-          ln -sf backend/${DB_FILE} .
-          cd backend
           sqlx migrate run
       - uses: actions-rs/cargo@v1
         with:
