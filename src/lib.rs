@@ -2,6 +2,7 @@ mod endpoints;
 mod error;
 mod state;
 
+use axum::Router;
 use dotenvy::dotenv;
 use sqlx::SqlitePool;
 use state::AppState;
@@ -9,7 +10,7 @@ use std::env;
 use std::error::Error;
 use tower_http::trace::TraceLayer;
 
-pub async fn run() -> Result<(), Box<dyn Error>> {
+pub async fn app() -> Result<Router, Box<dyn Error>> {
     // load .env file if present
     // TODO remove for production use
     dotenv().ok();
@@ -44,9 +45,5 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         // )
         .with_state(state);
 
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await?;
-
-    Ok(())
+    Ok(app)
 }
