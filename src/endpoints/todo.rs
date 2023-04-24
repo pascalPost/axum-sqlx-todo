@@ -12,7 +12,7 @@ use utoipa::ToSchema;
     paths(list_todos, create_todo),
     components(schemas(Todo, TodoEntry, TodoStatus))
 )]
-pub struct ApiDocTodo;
+pub struct ApiDoc;
 
 /// returns the router for the todo endpoint
 pub fn router() -> Router<AppState> {

@@ -2,9 +2,7 @@ mod endpoints;
 mod error;
 mod state;
 
-use axum::Router;
 use dotenvy::dotenv;
-use endpoints::{swagger_ui, todo};
 use sqlx::SqlitePool;
 use state::AppState;
 use std::env;
@@ -27,9 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let state = AppState::new(pool);
 
-    let app = Router::new()
-        .merge(swagger_ui::router())
-        .merge(todo::router())
+    let app = endpoints::router()
         .layer(TraceLayer::new_for_http())
         // .layer(
         //     ServiceBuilder::new()
